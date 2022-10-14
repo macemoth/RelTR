@@ -116,8 +116,8 @@ def main(args):
                 'to', 'under', 'using', 'walking in', 'walking on', 'watching', 'wearing', 'wears', 'with']
 
     model, _, _ = build_model(args)
-    ckpt = torch.load(args.resume)
-    model.load_state_dict(ckpt['model'], map_location=args.device)
+    ckpt = torch.load(args.resume, map_location=args.device)
+    model.load_state_dict(ckpt['model'])
     model.eval()
 
     img_path = args.img_path
@@ -181,8 +181,8 @@ def main(args):
         # get the feature map shape
         h, w = conv_features['0'].tensors.shape[-2:]
         im_w, im_h = im.size
-        for idx, ax_i, (sxmin, symin, sxmax, symax), (oxmin, oymin, oxmax, oymax) in \
-                zip(keep_queries, axs.T, sub_bboxes_scaled[indices], obj_bboxes_scaled[indices]):
+        for idx, (sxmin, symin, sxmax, symax), (oxmin, oymin, oxmax, oymax) in \
+                zip(keep_queries, sub_bboxes_scaled[indices], obj_bboxes_scaled[indices]):
             triples.append((CLASSES[probas_sub[idx].argmax()], REL_CLASSES[probas[idx].argmax()], CLASSES[probas_obj[idx].argmax()]))
 
         for triple in triples:
