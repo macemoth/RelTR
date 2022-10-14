@@ -2,7 +2,6 @@
 # Copyright (c) Institute of Information Processing, Leibniz University Hannover.
 import argparse
 from PIL import Image
-import matplotlib.pyplot as plt
 
 import torch
 import torchvision.transforms as T
@@ -164,6 +163,9 @@ def main(args):
             lambda self, input, output: dec_attn_weights_obj.append(output[1])
         )
     ]
+
+    triples = []
+
     with torch.no_grad():
         # propagate through the model
         outputs = model(img)
@@ -179,31 +181,14 @@ def main(args):
         # get the feature map shape
         h, w = conv_features['0'].tensors.shape[-2:]
         im_w, im_h = im.size
-
-        fig, axs = plt.subplots(ncols=len(indices), nrows=3, figsize=(22, 7))
         for idx, ax_i, (sxmin, symin, sxmax, symax), (oxmin, oymin, oxmax, oymax) in \
                 zip(keep_queries, axs.T, sub_bboxes_scaled[indices], obj_bboxes_scaled[indices]):
-            ax = ax_i[0]
-            ax.imshow(dec_attn_weights_sub[0, idx].view(h, w))
-            ax.axis('off')
-            ax.set_title(f'query id: {idx.item()}')
-            ax = ax_i[1]
-            ax.imshow(dec_attn_weights_obj[0, idx].view(h, w))
-            ax.axis('off')
-            ax = ax_i[2]
-            ax.imshow(im)
-            ax.add_patch(plt.Rectangle((sxmin, symin), sxmax - sxmin, symax - symin,
-                                       fill=False, color='blue', linewidth=2.5))
-            ax.add_patch(plt.Rectangle((oxmin, oymin), oxmax - oxmin, oymax - oymin,
-                                       fill=False, color='orange', linewidth=2.5))
+            triples.append((CLASSES[probas_sub[idx].argmax()], REL_CLASSES[probas[idx].argmax()], CLASSES[probas_obj[idx].argmax()]))
 
-            ax.axis('off')
-            ax.set_title(CLASSES[probas_sub[idx].argmax()]+' '+REL_CLASSES[probas[idx].argmax()]+' '+CLASSES[probas_obj[idx].argmax()], fontsize=10)
-
-        fig.tight_layout()
-        plt.show()
+        for triple in triples:
+            print(triple)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser('RelTR inference', parents=[get_args_parser()])
+    parser = argparse.ArgumentParser('RelTR triples', parents=[get_args_parser()])
     args = parser.parse_args()
     main(args)
