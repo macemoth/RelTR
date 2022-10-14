@@ -118,7 +118,7 @@ def main(args):
 
     model, _, _ = build_model(args)
     ckpt = torch.load(args.resume)
-    model.load_state_dict(ckpt['model'])
+    model.load_state_dict(ckpt['model'], map_location=args.device)
     model.eval()
 
     img_path = args.img_path

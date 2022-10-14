@@ -1,52 +1,23 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1-U642OoCyb8OSM8nx9lme49dmWa_aUcU?usp=sharing)
-# RelTR: Relation Transformer for Scene Graph Generation
+Fork of the [yrcong/RelTR](https://github.com/yrcong/RelTR/) repository, optimised for production rather than evaluation. 
 
-We now provide [[Colab](https://colab.research.google.com/drive/1-U642OoCyb8OSM8nx9lme49dmWa_aUcU?usp=sharing)] Demo! 
 
-PyTorch Implementation of the Paper [**RelTR: Relation Transformer for Scene Graph Generation**](https://arxiv.org/abs/2201.11460v2)
+# Installation
 
-Different from most existing advanced approaches that infer the **dense** relationships between all entity proposals, our one-stage method can directly generate a **sparse** scene graph by decoding the visual appearance.
+## RelTR (CPU)
 
-<p align="center">
-  <img src="demo/demo.png">
-</p>
+1. (Optional, but recommended) Create conda environment with `conda create -n reltr python=3.6` and activate it
+2. Install PyTorch and PyVision with `pip install torch==1.6.0 torchvision==0.7.0 --extra-index-url https://download.pytorch.org/whl/cpu`
+3. `pip install matplotlib scipy`
+4. Download the [RelTR model](https://drive.google.com/open?id=1id6oD_iwiNDD6HyCn2ORgRTIKkPD3tUD) and place it into `ckpt`
 
-# 0. Checklist
-
-- [x] Inference Code :tada:
-- [x] Training Code for Visual Genome :tada:
-- [x] Evaluation Code for Visual Genome :tada:
-- [x] Colab Demo :tada:
-- [ ] Training Code for OpenImages V6 :clock9:
-- [ ] Evaluation Code for OpenImages V6 :clock9:
-
-# 1. Installation
-Download **RelTR Repo** with:
-```
-git clone https://github.com/yrcong/RelTR.git
-cd RelTR
-```
-
-## For Inference
-:smile: It is super easy to configure the RelTR environment.
-
-If you want to **infer an image**, only python=3.6, PyTorch=1.6 and matplotlib are required!
-You can configure the environment as follows:
-```
-# create a conda environment 
-conda create -n reltr python=3.6
-conda activate reltr
-
-# install packages
-conda install pytorch==1.6.0 torchvision==0.7.0 cudatoolkit=10.1 -c pytorch
-conda install matplotlib
-```
+For help installing PyTorch, follow [PyTorch instructions](https://pytorch.org/get-started/locally/#supported-linux-distributions)
 
 ## Training/Evaluation on Visual Genome
 If you want to **train/evaluate** RelTR on Visual Genome, you need a little more preparation:
 
 a) Scipy (we used 1.5.2) and pycocotools are required. 
-```
+
+```shell
 conda install scipy
 pip install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 ```
@@ -56,7 +27,7 @@ b) Download the annotations of [Visual Genome (in COCO-format)](https://drive.go
 c) Download the the images of VG [Part1](https://cs.stanford.edu/people/rak248/VG_100K_2/images.zip) and [Part2](https://cs.stanford.edu/people/rak248/VG_100K_2/images2.zip). Unzip and place all images in a folder ```data/vg/images/```
 
 d) Some widely-used evaluation code (**IoU**) need to be compiled... We will replace it with Pytorch code.
-```
+```shell
 # compile the code computing box intersection
 cd lib/fpn
 sh make.sh
@@ -78,30 +49,26 @@ RelTR
 ... 
 ```
 
-# 2. Usage
+# Usage
 
 ## Inference
-a) Download our [RelTR model](https://drive.google.com/file/d/1id6oD_iwiNDD6HyCn2ORgRTIKkPD3tUD/view) pretrained on the Visual Genome dataset and put it under 
+
+Run 
+```shell
+python inference.py --img_path $IMAGE_PATH --resume $MODEL_PATH --device cpu
 ```
-ckpt/checkpoint0149.pth
-```
-b) Infer the relationships in an image with the command:
-```
-python inference.py --img_path $IMAGE_PATH --resume $MODEL_PATH
-```
-We attached 5 images from **VG** dataset and 1 image from **internet**. You can also test with your customized image. The result should look like:
-<p align="center">
-  <img src="demo/vg1_pred.png">
-</p>
+
+Or, if you have a CUDA-capable device, replace `cpu` by `cuda`.
+
 
 ## Training
 a) Train RelTR on Visual Genome on a single node with 8 GPUs (2 images per GPU):
-```
+```shell
 python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --dataset vg --img_folder data/vg/images/ --batch_size 2 --output_dir ckpt
 ```
 
 ## Evaluation
 b) Evaluate the pretrained RelTR on Visual Genome with a single GPU (1 image per GPU):
-```
+```shell
 python main.py --dataset vg --img_folder data/vg/images/ --eval --batch_size 1 --resume ckpt/checkpoint0149.pth
 ```
