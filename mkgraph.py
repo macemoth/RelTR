@@ -6,6 +6,7 @@ from PIL import Image
 import torch
 import torchvision.transforms as T
 from models import build_model
+import json
 
 
 def get_args_parser():
@@ -65,6 +66,8 @@ def get_args_parser():
     parser.add_argument('--eos_coef', default=0.1, type=float,
                         help="Relative classification weight of the no-object class")
 
+    # Graph
+    parser.add_argument('--export_path', default="graph.json", type=str, help="Filename for the exported triples")
 
     # distributed training parameters
     parser.add_argument('--return_interm_layers', action='store_true',
@@ -73,12 +76,12 @@ def get_args_parser():
 
 
 def main(args):
-
     transform = T.Compose([
         T.Resize(800),
         T.ToTensor(),
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
+
     # for output bounding box post-processing
     def box_cxcywh_to_xyxy(x):
         x_c, y_c, w, h = x.unbind(1)
@@ -93,27 +96,27 @@ def main(args):
         return b
 
     # VG classes
-    CLASSES = [ 'N/A', 'airplane', 'animal', 'arm', 'bag', 'banana', 'basket', 'beach', 'bear', 'bed', 'bench', 'bike',
-                'bird', 'board', 'boat', 'book', 'boot', 'bottle', 'bowl', 'box', 'boy', 'branch', 'building',
-                'bus', 'cabinet', 'cap', 'car', 'cat', 'chair', 'child', 'clock', 'coat', 'counter', 'cow', 'cup',
-                'curtain', 'desk', 'dog', 'door', 'drawer', 'ear', 'elephant', 'engine', 'eye', 'face', 'fence',
-                'finger', 'flag', 'flower', 'food', 'fork', 'fruit', 'giraffe', 'girl', 'glass', 'glove', 'guy',
-                'hair', 'hand', 'handle', 'hat', 'head', 'helmet', 'hill', 'horse', 'house', 'jacket', 'jean',
-                'kid', 'kite', 'lady', 'lamp', 'laptop', 'leaf', 'leg', 'letter', 'light', 'logo', 'man', 'men',
-                'motorcycle', 'mountain', 'mouth', 'neck', 'nose', 'number', 'orange', 'pant', 'paper', 'paw',
-                'people', 'person', 'phone', 'pillow', 'pizza', 'plane', 'plant', 'plate', 'player', 'pole', 'post',
-                'pot', 'racket', 'railing', 'rock', 'roof', 'room', 'screen', 'seat', 'sheep', 'shelf', 'shirt',
-                'shoe', 'short', 'sidewalk', 'sign', 'sink', 'skateboard', 'ski', 'skier', 'sneaker', 'snow',
-                'sock', 'stand', 'street', 'surfboard', 'table', 'tail', 'tie', 'tile', 'tire', 'toilet', 'towel',
-                'tower', 'track', 'train', 'tree', 'truck', 'trunk', 'umbrella', 'vase', 'vegetable', 'vehicle',
-                'wave', 'wheel', 'window', 'windshield', 'wing', 'wire', 'woman', 'zebra']
+    CLASSES = ['N/A', 'airplane', 'animal', 'arm', 'bag', 'banana', 'basket', 'beach', 'bear', 'bed', 'bench', 'bike',
+               'bird', 'board', 'boat', 'book', 'boot', 'bottle', 'bowl', 'box', 'boy', 'branch', 'building',
+               'bus', 'cabinet', 'cap', 'car', 'cat', 'chair', 'child', 'clock', 'coat', 'counter', 'cow', 'cup',
+               'curtain', 'desk', 'dog', 'door', 'drawer', 'ear', 'elephant', 'engine', 'eye', 'face', 'fence',
+               'finger', 'flag', 'flower', 'food', 'fork', 'fruit', 'giraffe', 'girl', 'glass', 'glove', 'guy',
+               'hair', 'hand', 'handle', 'hat', 'head', 'helmet', 'hill', 'horse', 'house', 'jacket', 'jean',
+               'kid', 'kite', 'lady', 'lamp', 'laptop', 'leaf', 'leg', 'letter', 'light', 'logo', 'man', 'men',
+               'motorcycle', 'mountain', 'mouth', 'neck', 'nose', 'number', 'orange', 'pant', 'paper', 'paw',
+               'people', 'person', 'phone', 'pillow', 'pizza', 'plane', 'plant', 'plate', 'player', 'pole', 'post',
+               'pot', 'racket', 'railing', 'rock', 'roof', 'room', 'screen', 'seat', 'sheep', 'shelf', 'shirt',
+               'shoe', 'short', 'sidewalk', 'sign', 'sink', 'skateboard', 'ski', 'skier', 'sneaker', 'snow',
+               'sock', 'stand', 'street', 'surfboard', 'table', 'tail', 'tie', 'tile', 'tire', 'toilet', 'towel',
+               'tower', 'track', 'train', 'tree', 'truck', 'trunk', 'umbrella', 'vase', 'vegetable', 'vehicle',
+               'wave', 'wheel', 'window', 'windshield', 'wing', 'wire', 'woman', 'zebra']
 
     REL_CLASSES = ['__background__', 'above', 'across', 'against', 'along', 'and', 'at', 'attached to', 'behind',
-                'belonging to', 'between', 'carrying', 'covered in', 'covering', 'eating', 'flying in', 'for',
-                'from', 'growing on', 'hanging from', 'has', 'holding', 'in', 'in front of', 'laying on',
-                'looking at', 'lying on', 'made of', 'mounted on', 'near', 'of', 'on', 'on back of', 'over',
-                'painted on', 'parked on', 'part of', 'playing', 'riding', 'says', 'sitting on', 'standing on',
-                'to', 'under', 'using', 'walking in', 'walking on', 'watching', 'wearing', 'wears', 'with']
+                   'belonging to', 'between', 'carrying', 'covered in', 'covering', 'eating', 'flying in', 'for',
+                   'from', 'growing on', 'hanging from', 'has', 'holding', 'in', 'in front of', 'laying on',
+                   'looking at', 'lying on', 'made of', 'mounted on', 'near', 'of', 'on', 'on back of', 'over',
+                   'painted on', 'parked on', 'part of', 'playing', 'riding', 'says', 'sitting on', 'standing on',
+                   'to', 'under', 'using', 'walking in', 'walking on', 'watching', 'wearing', 'wears', 'with']
 
     model, _, _ = build_model(args)
     ckpt = torch.load(args.resume, map_location=args.device)
@@ -146,23 +149,26 @@ def main(args):
     # probas.shape == (200, len(REL_CLASSES)), probas_sub.shape == probas_obj.shape == (200, len(CLASSES))
     topk = 10
     keep_queries = torch.nonzero(keep, as_tuple=True)[0]
-    indices = torch.argsort(-probas[keep_queries].max(-1)[0] * probas_sub[keep_queries].max(-1)[0] * probas_obj[keep_queries].max(-1)[0])[:topk]
+    indices = torch.argsort(
+        -probas[keep_queries].max(-1)[0] * probas_sub[keep_queries].max(-1)[0] * probas_obj[keep_queries].max(-1)[0])[
+              :topk]
     keep_queries = keep_queries[indices]
 
     # use lists to store the outputs via up-values
-    conv_features, dec_attn_weights_sub, dec_attn_weights_obj = [], [], []
-
-    hooks = [
-        model.backbone[-2].register_forward_hook(
-            lambda self, input, output: conv_features.append(output)
-        ),
-        model.transformer.decoder.layers[-1].cross_attn_sub.register_forward_hook(
-            lambda self, input, output: dec_attn_weights_sub.append(output[1])
-        ),
-        model.transformer.decoder.layers[-1].cross_attn_obj.register_forward_hook(
-            lambda self, input, output: dec_attn_weights_obj.append(output[1])
-        )
-    ]
+    # Currently we do not need attention regions (rendered as lights overlayed on the image)
+    # conv_features, dec_attn_weights_sub, dec_attn_weights_obj = [], [], []
+    #
+    # hooks = [
+    #     model.backbone[-2].register_forward_hook(
+    #         lambda self, input, output: conv_features.append(output)
+    #     ),
+    #     model.transformer.decoder.layers[-1].cross_attn_sub.register_forward_hook(
+    #         lambda self, input, output: dec_attn_weights_sub.append(output[1])
+    #     ),
+    #     model.transformer.decoder.layers[-1].cross_attn_obj.register_forward_hook(
+    #         lambda self, input, output: dec_attn_weights_obj.append(output[1])
+    #     )
+    # ]
 
     triples = []
 
@@ -170,23 +176,49 @@ def main(args):
         # propagate through the model
         outputs = model(img)
 
-        for hook in hooks:
-            hook.remove()
-
-        # don't need the list anymore
-        conv_features = conv_features[0]
-        dec_attn_weights_sub = dec_attn_weights_sub[0]
-        dec_attn_weights_obj = dec_attn_weights_obj[0]
+        # These are also for attention
+        # for hook in hooks:
+        #     hook.remove()
+        #
+        # # don't need the list anymore
+        # conv_features = conv_features[0]
+        # dec_attn_weights_sub = dec_attn_weights_sub[0]
+        # dec_attn_weights_obj = dec_attn_weights_obj[0]
 
         # get the feature map shape
-        h, w = conv_features['0'].tensors.shape[-2:]
-        im_w, im_h = im.size
+        # h, w = conv_features['0'].tensors.shape[-2:]
+        # im_w, im_h = im.size
+
         for idx, (sxmin, symin, sxmax, symax), (oxmin, oymin, oxmax, oymax) in \
                 zip(keep_queries, sub_bboxes_scaled[indices], obj_bboxes_scaled[indices]):
-            triples.append((CLASSES[probas_sub[idx].argmax()], REL_CLASSES[probas[idx].argmax()], CLASSES[probas_obj[idx].argmax()]))
+            triple = {
+                "subject": {
+                    "id": CLASSES[probas_sub[idx].argmax()],
+                    "xmin": sxmin.item(),
+                    "ymin": symin.item(),
+                    "xmax": sxmax.item(),
+                    "ymax": symax.item()
+                },
+                "predicate": {
+                    "id": REL_CLASSES[probas[idx].argmax()]
+                },
+                "object": {
+                    "id": CLASSES[probas_obj[idx].argmax()],
+                    "xmin": oxmin.item(),
+                    "ymin": oymin.item(),
+                    "xmax": oxmax.item(),
+                    "ymax": oymax.item()
+                }
+            }
+            triples.append(triple)
+    triples_to_json(triples, filename=args.export_path)
 
-        for triple in triples:
-            print(triple)
+
+def triples_to_json(triples, filename):
+    with open(filename, "w") as file:
+        file.write(json.dumps(triples))
+        file.close()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('RelTR triples', parents=[get_args_parser()])
