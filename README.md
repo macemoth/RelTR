@@ -27,6 +27,7 @@ b) Download the annotations of [Visual Genome (in COCO-format)](https://drive.go
 c) Download the the images of VG [Part1](https://cs.stanford.edu/people/rak248/VG_100K_2/images.zip) and [Part2](https://cs.stanford.edu/people/rak248/VG_100K_2/images2.zip). Unzip and place all images in a folder ```data/vg/images/```
 
 d) Some widely-used evaluation code (**IoU**) need to be compiled... We will replace it with Pytorch code.
+
 ```shell
 # compile the code computing box intersection
 cd lib/fpn
@@ -34,7 +35,8 @@ sh make.sh
 ```
 
 The directory structure looks like:
-```
+
+```shell
 RelTR
 | 
 │
@@ -53,9 +55,10 @@ RelTR
 
 ## Inference
 
-Run 
+Run
+
 ```shell
-python inference.py --img_path $IMAGE_PATH --resume $MODEL_PATH --device cpu
+python inference.py --img_path $IMAGE_PATH --resume $MODEL_PATH --device cpu [--export_path graph.json]
 ```
 
 Or, if you have a CUDA-capable device, replace `cpu` by `cuda`.
@@ -63,12 +66,14 @@ Or, if you have a CUDA-capable device, replace `cpu` by `cuda`.
 
 ## Training
 a) Train RelTR on Visual Genome on a single node with 8 GPUs (2 images per GPU):
+
 ```shell
 python -m torch.distributed.launch --nproc_per_node=8 --use_env main.py --dataset vg --img_folder data/vg/images/ --batch_size 2 --output_dir ckpt
 ```
 
 ## Evaluation
 b) Evaluate the pretrained RelTR on Visual Genome with a single GPU (1 image per GPU):
+
 ```shell
 python main.py --dataset vg --img_folder data/vg/images/ --eval --batch_size 1 --resume ckpt/checkpoint0149.pth
 ```
