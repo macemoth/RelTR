@@ -69,6 +69,8 @@ def get_args_parser():
     # Graph
     parser.add_argument('--export_path', default="graph.json", type=str, help="Filename for the exported triples")
 
+    parser.add_argument('--topk', default=10, type=int, help="Top k triples to return")
+
     # distributed training parameters
     parser.add_argument('--return_interm_layers', action='store_true',
                         help="Return the fpn if there is the tag")
@@ -147,7 +149,7 @@ def main(args):
     # get topk results. max(-1) means the last dimension, or in the 3d case, the "depth":
     # https://stackoverflow.com/questions/59702785/what-does-dim-1-or-2-mean-in-torch-sum
     # probas.shape == (200, len(REL_CLASSES)), probas_sub.shape == probas_obj.shape == (200, len(CLASSES))
-    topk = 10
+    topk = args.topk
     keep_queries = torch.nonzero(keep, as_tuple=True)[0]
     indices = torch.argsort(
         -probas[keep_queries].max(-1)[0] * probas_sub[keep_queries].max(-1)[0] * probas_obj[keep_queries].max(-1)[0])[
