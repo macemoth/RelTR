@@ -63,6 +63,14 @@ python inference.py --img_path $IMAGE_PATH --resume $MODEL_PATH --device cpu [--
 
 Or, if you have a CUDA-capable device, replace `cpu` by `cuda`.
 
+## Scene verbalisation
+
+Set an environment variable `OPENAI_API_KEY=<YOUR API KEY>` with your OpenAI key.
+
+````shell
+pip3 install openai flask
+python server.py
+````
 
 ## Training
 a) Train RelTR on Visual Genome on a single node with 8 GPUs (2 images per GPU):
