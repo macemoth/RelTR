@@ -221,7 +221,6 @@ def triples_to_json(triples, filename):
         file.write(json.dumps(triples))
         file.close()
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('RelTR triples', parents=[get_args_parser()])
     args = parser.parse_args()
