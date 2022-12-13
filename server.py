@@ -7,7 +7,7 @@ import os
 import io
 
 app = Flask(__name__)
-app.config.update(SERVER_NAME='127.0.0.1:5000')
+app.config.update(SERVER_NAME='0.0.0.0:5000')
 
 img_path = 'web/image.jpg'
 graph_path = 'web/graph.json'
