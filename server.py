@@ -7,15 +7,15 @@ import os
 import io
 
 app = Flask(__name__)
-app.config.update(SERVER_NAME='0.0.0.0:5000')
+app.config.update(SERVER_NAME='130.82.27.169:5000')
 
 img_path = 'web/image.jpg'
 graph_path = 'web/graph.json'
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-language_model = "text-davinci-002"
+language_model = "text-davinci-001"
 
-topk = 3
+topk = 5
 
 
 @app.route('/upload', methods=['POST'])
@@ -30,7 +30,7 @@ def upload_generate():
 
 
 def transform_to_sentence(triples):
-    gpt_query = "Summarize the following triples in two sentences: "
+    gpt_query = "Describe the following triples in a nice story scene setting: "
     triples_string = ""
     for t in triples:
         triples_string += t + " "
