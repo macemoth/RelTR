@@ -19,7 +19,7 @@ topk = 5
 
 
 @app.route('/upload', methods=['POST'])
-def upload_generate():
+def get_scenedescription():
     with open(img_path, "wb") as file:
         file.write(io.BytesIO(request.data).getvalue())
         file.close()
