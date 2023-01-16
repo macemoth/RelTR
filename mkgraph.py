@@ -151,10 +151,14 @@ def main(args):
     # probas.shape == (200, len(REL_CLASSES)), probas_sub.shape == probas_obj.shape == (200, len(CLASSES))
     topk = args.topk
     keep_queries = torch.nonzero(keep, as_tuple=True)[0]
-    indices = torch.argsort(
-        -probas[keep_queries].max(-1)[0] * probas_sub[keep_queries].max(-1)[0] * probas_obj[keep_queries].max(-1)[0])[
-              :topk]
-    keep_queries = keep_queries[indices]
+    if (len(probas[keep_queries]) > 0):
+        indices = torch.argsort(
+            -probas[keep_queries].max(-1)[0] * probas_sub[keep_queries].max(-1)[0] * probas_obj[keep_queries].max(-1)[0])[:topk]
+        keep_queries = keep_queries[indices]
+    else:
+        triples_to_json([], filename=args.export_path)
+        print(f"RelTR found no matches for {args.img_path}")
+        return
 
     # use lists to store the outputs via up-values
     # Currently we do not need attention regions (rendered as lights overlayed on the image)
