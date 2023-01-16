@@ -30,7 +30,7 @@ def get_scenedescription():
 
 
 def transform_to_sentence(triples):
-    gpt_query = "Describe the following triples in a nice story scene setting: "
+    gpt_query = "Summarize the following triples in a sentence: "
     triples_string = ""
     for t in triples:
         triples_string += t + " "
